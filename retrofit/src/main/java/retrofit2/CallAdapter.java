@@ -24,6 +24,24 @@ import javax.annotation.Nullable;
  * Adapts a {@link Call} with response type {@code R} into the type of {@code T}. Instances are
  * created by {@linkplain Factory a factory} which is {@linkplain
  * Retrofit.Builder#addCallAdapterFactory(Factory) installed} into the {@link Retrofit} instance.
+ * CallAdapter详细介绍：
+ * 首先CallAdapter是一个泛型接口类，传入两个泛型参数：R:Reponse T:
+ * CallAdapter是网络请求执行器（Call）的适配器
+ * Call在Retrofit里默认是OkHttpCall
+ * 在Retrofit中提供了四种CallAdapterFactory： 
+ * 1、ExecutorCallAdapterFactory（默认）、
+ * 2、GuavaCallAdapterFactory、
+ * 3、Java8CallAdapterFactory、
+ * 4、RxJavaCallAdapterFactory
+ * 
+ * 作用：将默认的网络请求执行器（OkHttpCall）转换成适合被不同平台来调用的网络请求执行器形式
+ *  一开始Retrofit只打算利用OkHttpCall通过ExecutorCallbackCall切换线程；
+ *  但后来发现使用Rxjava更加方便（不需要Handler来切换线程）。
+ *  想要实现Rxjava的情况，那就得使用RxJavaCallAdapterFactoryCallAdapter将OkHttpCall转换成Rxjava(Scheduler)：
+ * 
+ *   //把response封装成rxjava的Observeble，然后进行流式操作
+ *   Retrofit.Builder.addCallAdapterFactory(newRxJavaCallAdapterFactory().create()); 
+ *   // 关于RxJava的使用这里不作更多的展开
  */
 public interface CallAdapter<R, T> {
   /**

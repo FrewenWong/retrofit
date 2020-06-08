@@ -37,6 +37,7 @@ import retrofit2.http.QueryMap;
  * Convert objects to and from their representation in HTTP. Instances are created by {@linkplain
  * Factory a factory} which is {@linkplain Retrofit.Builder#addConverterFactory(Factory) installed}
  * into the {@link Retrofit} instance.
+ * 
  */
 public interface Converter<F, T> {
   @Nullable

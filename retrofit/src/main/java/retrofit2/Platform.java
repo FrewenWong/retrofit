@@ -30,14 +30,22 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import javax.annotation.Nullable;
 import org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement;
-
+/**
+ * Platform 进行应用运行的平台的设计
+ * 
+ */
 class Platform {
+  // 将findPlatform()赋给静态变量
   private static final Platform PLATFORM = findPlatform();
 
   static Platform get() {
+    // 返回静态变量PLATFORM，即findPlatform()，所以我们看看findPlatform怎么做的
     return PLATFORM;
   }
 
+  /**
+   * 判断是Android平台还是其他平台
+   */
   private static Platform findPlatform() {
     return "Dalvik".equals(System.getProperty("java.vm.name"))
         ? new Android() //
@@ -109,6 +117,10 @@ class Platform {
     return lookup.unreflectSpecial(method, declaringClass).bindTo(object).invokeWithArguments(args);
   }
 
+  /**
+   * Platform中的一个静态内部类
+   * Android用于接收服务器返回数据后进行线程切换在主线程显示结果
+   */
   static final class Android extends Platform {
     Android() {
       super(Build.VERSION.SDK_INT >= 24);
@@ -116,6 +128,8 @@ class Platform {
 
     @Override
     public Executor defaultCallbackExecutor() {
+      // 返回一个默认的回调方法执行器
+      // 该执行器作用：切换线程（子->>主线程），并在主线程（UI线程）中执行回调方法
       return new MainThreadExecutor();
     }
 
@@ -131,6 +145,8 @@ class Platform {
     }
 
     static final class MainThreadExecutor implements Executor {
+      // 该Handler是上面获取的与Android主线程绑定的Handler 
+      // 在UI线程进行对网络请求返回数据处理等操作。
       private final Handler handler = new Handler(Looper.getMainLooper());
 
       @Override

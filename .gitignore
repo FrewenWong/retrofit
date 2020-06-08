@@ -7,3 +7,16 @@ local.properties
 # Idea
 .idea
 *.iml
+retrofit-adapters/rxjava2/.classpath
+retrofit-adapters/rxjava2/.project
+retrofit-adapters/rxjava2/.settings/org.eclipse.buildship.core.prefs
+retrofit-adapters/rxjava3/.classpath
+retrofit-adapters/rxjava3/.project
+retrofit-adapters/rxjava3/.settings/org.eclipse.buildship.core.prefs
+retrofit-adapters/scala/.classpath
+retrofit-adapters/scala/.project
+retrofit-adapters/scala/.settings/org.eclipse.buildship.core.prefs
+retrofit-converters/.settings/org.eclipse.buildship.core.prefs
+retrofit-converters/gson/.classpath
+retrofit-converters/gson/.project
+retrofit-converters/gson/.settings/org.eclipse.buildship.core.prefs

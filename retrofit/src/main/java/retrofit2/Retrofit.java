@@ -135,18 +135,27 @@ public final class Retrofit {
    *   Call&lt;List&lt;Item&gt;&gt; categoryList(@Path("cat") String a, @Query("page") int b);
    * }
    * </pre>
+   * 
+   * Retrofit是通过外观模式 & 代理模式 使用create（）方法创建网络请求接口的实例
+   * （同时，通过网络请求接口里设置的注解进行了网络请求参数的配置）
+   * 从下面的分析我们就可以看出夏敏使用的主要是动态代理
    */
   @SuppressWarnings("unchecked") // Single-interface proxy creation guarded by parameter safety.
   public <T> T create(final Class<T> service) {
     validateServiceInterface(service);
+
+    // 创建了网络请求接口的动态代理对象，即通过动态代理创建网络请求接口的实例 （并最终返回）
+    // // 该动态代理是为了拿到网络请求接口实例上所有注解
     return (T)
         Proxy.newProxyInstance(
-            service.getClassLoader(),
-            new Class<?>[] {service},
-            new InvocationHandler() {
+            service.getClassLoader(),   // 动态生成接口的实现类 
+            new Class<?>[] {service},   // 动态创建实例
+            new InvocationHandler() {   // 将代理类的实现交给 InvocationHandler类作为具体的实现（下面会解释）
+              // 
               private final Platform platform = Platform.get();
               private final Object[] emptyArgs = new Object[0];
-
+              // 在 InvocationHandler类的invoke（）实现中，除了执行真正的逻辑（如再次转发给真正的实现类对象），还可以进行一些有用的操作
+              // 如统计执行时间、进行初始化和清理、对接口调用进行检查等。
               @Override
               public @Nullable Object invoke(Object proxy, Method method, @Nullable Object[] args)
                   throws Throwable {
@@ -423,14 +432,27 @@ public final class Retrofit {
    *
    * <p>Calling {@link #baseUrl} is required before calling {@link #build()}. All other methods are
    * optional.
+   * Builder类的成员变量与Retrofit类的成员变量是对应的,所以Retrofit类的成员变量基本上是通过Builder类进行配置
    */
   public static final class Builder {
     private final Platform platform;
+    // 网络请求器的工厂
+    // 作用：生产网络请求器（Call）
+    // Retrofit是默认使用okhttp
     private @Nullable okhttp3.Call.Factory callFactory;
+    // 网络请求的url地址
     private @Nullable HttpUrl baseUrl;
+    // 数据转换器工厂的集合
+    // 作用：放置数据转换器工厂
+    // 数据转换器工厂作用：生产数据转换器（converter）
     private final List<Converter.Factory> converterFactories = new ArrayList<>();
+    //// 网络请求器的工厂作用：生产网络请求器（Call）
+    // Retrofit是默认使用okhttp.当然，我们也可以实现我们自己的Call
     private final List<CallAdapter.Factory> callAdapterFactories = new ArrayList<>();
+    // 回调方法执行器.
     private @Nullable Executor callbackExecutor;
+    // 标志位
+    // 作用：是否提前对业务接口中的注解进行验证转换的标志位
     private boolean validateEagerly;
 
     Builder(Platform platform) {
@@ -493,6 +515,7 @@ public final class Retrofit {
      */
     public Builder baseUrl(URL baseUrl) {
       Objects.requireNonNull(baseUrl, "baseUrl == null");
+      //最终返回带httpUrl类型参数的baseUrl
       return baseUrl(HttpUrl.get(baseUrl.toString()));
     }
 
@@ -555,10 +578,14 @@ public final class Retrofit {
      * <p>Base URL: http://example.com<br>
      * Endpoint: //github.com/square/retrofit/<br>
      * Result: http://github.com/square/retrofit/ (note the scheme stays 'http')
+     * baseUrl（）用于配置Retrofit类的网络请求url地址
      */
     public Builder baseUrl(HttpUrl baseUrl) {
       Objects.requireNonNull(baseUrl, "baseUrl == null");
+      //把URL参数分割成几个路径碎片
       List<String> pathSegments = baseUrl.pathSegments();
+      //检测最后一个碎片来检查URL参数是不是以"/"结尾
+      // 不是就抛出异常
       if (!"".equals(pathSegments.get(pathSegments.size() - 1))) {
         throw new IllegalArgumentException("baseUrl must end in /: " + baseUrl);
       }
@@ -567,6 +594,7 @@ public final class Retrofit {
     }
 
     /** Add converter factory for serialization and deserialization of objects. */
+    // 将上面创建的GsonConverterFactory放入到 converterFactories数组
     public Builder addConverterFactory(Converter.Factory factory) {
       converterFactories.add(Objects.requireNonNull(factory, "factory == null"));
       return this;
@@ -614,9 +642,10 @@ public final class Retrofit {
 
     /**
      * Create the {@link Retrofit} instance using the configured values.
-     *
+     *  
      * <p>Note: If neither {@link #client} nor {@link #callFactory} is called a default {@link
      * OkHttpClient} will be created and used.
+     * 使用建造者配置数据来生成Retrofit实例对象
      */
     public Retrofit build() {
       if (baseUrl == null) {
@@ -647,7 +676,8 @@ public final class Retrofit {
       converterFactories.add(new BuiltInConverters());
       converterFactories.addAll(this.converterFactories);
       converterFactories.addAll(platform.defaultConverterFactories());
-
+      // unmodifiableList(list)近似于UnmodifiableList<E>(list)
+      // 创建的新对象能够对list数据进行访问，但不可通过该对象对list集合中的元素进行修改
       return new Retrofit(
           callFactory,
           baseUrl,

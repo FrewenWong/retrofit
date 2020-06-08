@@ -39,6 +39,7 @@ public final class GsonConverterFactory extends Converter.Factory {
    * decoding from JSON (when no charset is specified by a header) will use UTF-8.
    */
   public static GsonConverterFactory create() {
+    //创建一个Gson对象
     return create(new Gson());
   }
 
@@ -49,11 +50,18 @@ public final class GsonConverterFactory extends Converter.Factory {
   @SuppressWarnings("ConstantConditions") // Guarding public API nullability.
   public static GsonConverterFactory create(Gson gson) {
     if (gson == null) throw new NullPointerException("gson == null");
+    // 根据传入的Gson对象创建了一个含有Gson对象实例的GsonConverterFactory
     return new GsonConverterFactory(gson);
   }
 
   private final Gson gson;
 
+  /**
+   * 私有构造函数，所以只能通过工厂类来进行生成GsonConverterFactory对象
+   * 所以，GsonConverterFactory.creat()是创建了一个含有Gson对象实例的GsonConverterFactory，
+   * 并返回给addConverterFactory（）
+   * @param gson
+   */
   private GsonConverterFactory(Gson gson) {
     this.gson = gson;
   }

@@ -136,16 +136,21 @@ public final class Retrofit {
    * }
    * </pre>
    * 
-   * Retrofit是通过外观模式 & 代理模式 使用create（）方法创建网络请求接口的实例
+   * Retrofit是通过代理模式 使用create（）方法创建网络请求接口的实例
    * （同时，通过网络请求接口里设置的注解进行了网络请求参数的配置）
    * 从下面的分析我们就可以看出夏敏使用的主要是动态代理
+   * 
+   * 特别注意
+   * return (T) Proxy.newProxyInstance(ClassLoader loader, Class<?>[] interfaces,  InvocationHandler invocationHandler)
+   * 可以解读为：getProxyClass(loader, interfaces) .getConstructor(InvocationHandler.class).newInstance(invocationHandler);
+   * 即通过动态生成的代理类，调用interfaces接口的方法实际上是通过调用InvocationHandler对象的invoke（）来完成指定的功能
    */
   @SuppressWarnings("unchecked") // Single-interface proxy creation guarded by parameter safety.
   public <T> T create(final Class<T> service) {
     validateServiceInterface(service);
 
     // 创建了网络请求接口的动态代理对象，即通过动态代理创建网络请求接口的实例 （并最终返回）
-    // // 该动态代理是为了拿到网络请求接口实例上所有注解
+    // 该动态代理是为了拿到网络请求接口实例上所有注解
     return (T)
         Proxy.newProxyInstance(
             service.getClassLoader(),   // 动态生成接口的实现类 
@@ -163,7 +168,14 @@ public final class Retrofit {
                 if (method.getDeclaringClass() == Object.class) {
                   return method.invoke(this, args);
                 }
+                // 我们这个传入的只是一个被代理接口，接口的具体实现，在这个方法里面执行
+                // 创建了网络请求接口的动态代理对象，即通过动态代理创建网络请求接口的实例 （并最终返回）
+                // 该动态代理是为了拿到网络请求接口实例上所有注解
                 args = args != null ? args : emptyArgs;
+                // 下面会详细介绍 invoke（）的实现
+                // 即下面三行代码，首先先判断是否是默认Method
+
+                /// 我们主要看loadServiceMethod的实现。获取ServiceMethod然后执行invoke
                 return platform.isDefaultMethod(method)
                     ? platform.invokeDefaultMethod(method, service, proxy, args)
                     : loadServiceMethod(method).invoke(args);
@@ -192,6 +204,7 @@ public final class Retrofit {
     }
 
     if (validateEagerly) {
+      /// 获取当前程序的平台
       Platform platform = Platform.get();
       for (Method method : service.getDeclaredMethods()) {
         if (!platform.isDefaultMethod(method) && !Modifier.isStatic(method.getModifiers())) {
@@ -201,13 +214,22 @@ public final class Retrofit {
     }
   }
 
+  /**
+   * 根据Method来获取ServiceMethod
+   * @param method
+   * @return
+   */
   ServiceMethod<?> loadServiceMethod(Method method) {
+    // 先从缓存获取，如果缓存有，则直接返回
     ServiceMethod<?> result = serviceMethodCache.get(method);
     if (result != null) return result;
 
+    /// 如果缓存没有，则重新写入缓存中
     synchronized (serviceMethodCache) {
       result = serviceMethodCache.get(method);
       if (result == null) {
+        // 进行解析传入的Service的各个注解，然后生成对应的ServiceMethod对象
+        // 并且存放到serviceMethodCache
         result = ServiceMethod.parseAnnotations(this, method);
         serviceMethodCache.put(method, result);
       }

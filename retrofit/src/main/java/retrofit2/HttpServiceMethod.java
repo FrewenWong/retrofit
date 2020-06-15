@@ -131,6 +131,12 @@ abstract class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<Retur
   private final okhttp3.Call.Factory callFactory;
   private final Converter<ResponseBody, ResponseT> responseConverter;
 
+  /**
+   * HttpServiceMethod的构造函数
+   * @param requestFactory
+   * @param callFactory
+   * @param responseConverter
+   */
   HttpServiceMethod(
       RequestFactory requestFactory,
       okhttp3.Call.Factory callFactory,
@@ -139,7 +145,9 @@ abstract class HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<Retur
     this.callFactory = callFactory;
     this.responseConverter = responseConverter;
   }
-
+  /**
+   * 
+   */
   @Override
   final @Nullable ReturnT invoke(Object[] args) {
     Call<ResponseT> call = new OkHttpCall<>(requestFactory, args, callFactory, responseConverter);
